@@ -1,18 +1,25 @@
-FROM ubuntu:12.10
-MAINTAINER Ken Cochrane "kencochrane@gmail.com"
+FROM ubuntu:13.10
+MAINTAINER Nick Lang "nick@nicklan.com"
+#RUN echo "deb http://archive.ubuntu.com/ubuntu precise main universe" > /etc/apt/sources.list
 RUN apt-get -qq update
-RUN apt-get install -y python-dev python-setuptools supervisor git-core
+RUN apt-get upgrade -y
+RUN apt-get install -y openssh-server supervisor python-dev python-setuptools git-core
+
+RUN mkdir /var/run/sshd 
+RUN echo 'root:treadhub' |chpasswd
+
 RUN easy_install pip
 RUN pip install virtualenv
 RUN pip install uwsgi
-RUN virtualenv --no-site-packages /opt/ve/djdocker
-ADD . /opt/apps/djdocker
+RUN virtualenv --no-site-packages /opt/ve/treadhub
+
+VOLUME ["/opt/apps/treadhub"]
+
+ADD requirements.txt /opt/apps/treadhub/requirements.txt
 ADD .docker/supervisor.conf /opt/supervisor.conf
 ADD .docker/run.sh /usr/local/bin/run
-RUN (cd /opt/apps/djdocker && git remote rm origin)
-RUN (cd /opt/apps/djdocker && git remote add origin https://github.com/kencochrane/django-docker.git)
-RUN /opt/ve/djdocker/bin/pip install -r /opt/apps/djdocker/requirements.txt
-RUN (cd /opt/apps/djdocker && /opt/ve/djdocker/bin/python manage.py syncdb --noinput)
-RUN (cd /opt/apps/djdocker && /opt/ve/djdocker/bin/python manage.py collectstatic --noinput)
-EXPOSE 8000
+RUN /opt/ve/treadhub/bin/pip install -r /opt/apps/treadhub/requirements.txt
+
+EXPOSE 8000 22
+
 CMD ["/bin/sh", "-e", "/usr/local/bin/run"]
